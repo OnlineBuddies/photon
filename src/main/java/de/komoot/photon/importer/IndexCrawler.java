@@ -149,7 +149,7 @@ public class IndexCrawler {
         return null;
     }
 
-    String getSelectQuery() {
+    String getSelectQuery(String polygon) {
 		StringBuilder sqlSelectNames = new StringBuilder(SQL_TEMPLATE_HSTORE_NAME);
 		for(String language : languages) {
 			sqlSelectNames.append(" , name->'name:").append(language).append("' as name_").append(language);
@@ -162,6 +162,8 @@ public class IndexCrawler {
         }
 
 		sql += " ORDER BY st_x(ST_SnapToGrid(centroid, 0.1)), st_y(ST_SnapToGrid(centroid, 0.1)) "; // for performance reasons, ~15% faster
+
+        return sql;
     }
 
     /**
@@ -170,10 +172,10 @@ public class IndexCrawler {
      * @return
      * @throws SQLException
      */
-    public ResultSet getNumRecords(int count) throws SQLException {
+    public ResultSet getNumRecords(int count, String polygon) throws SQLException {
         PreparedStatement statementNum;
 
-        String sql = getSelectQuery();
+        String sql = getSelectQuery(polygon);
         sql += String.format(" OFFSET %d LIMIT %d", lastRecord, count);
         statementNum = connection.prepareStatement(sql);
         statementNum.setFetchSize(100000);
@@ -192,7 +194,7 @@ public class IndexCrawler {
 	public ResultSet getAllRecords(String polygon) throws SQLException {
 		PreparedStatement statementAll;
 
-        String sql = getSelectQuery();
+        String sql = getSelectQuery(polygon);
 		statementAll = connection.prepareStatement(sql);
 		statementAll.setFetchSize(100000);
 
